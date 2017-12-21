@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/mitchellh/go-homedir"
 	"path"
+	"github.com/toorop/go-bittrex"
 )
 
 type Config struct {
@@ -25,11 +26,21 @@ var (
 
 func main() {
 
-	fmt.Printf("started successfully")
-	if path, er := readBittrexCredentials(DefaultConfigPath); er == nil{
-		fmt.Printf("path: %s", path)
+	fmt.Println("started successfully")
+	config, err := readBittrexCredentials(DefaultConfigPath)
+	if  err != nil{
+		fmt.Println(err)
 	}
 
+	bittrex := bittrex.New(config.Key, config.Secret)
+
+	markets, err := bittrex.GetMarkets()
+	marketsFormatted, err := json.MarshalIndent(markets, "", " ") 
+	if err == nil{
+		 fmt.Println("Error: ", err)
+	}
+	os.Stdout.Write(marketsFormatted)
+	
 }
 
 func readBittrexCredentials(providedPath string) (conf Config, err error ){
