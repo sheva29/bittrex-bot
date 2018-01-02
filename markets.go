@@ -11,7 +11,7 @@ import (
 	// "io/ioutil"
     // "errors"
 )
-const coinMarketCapUrl string = "https://api.coinmarketcap.com/v1/ticker/"
+const coinMarketCapUrl string = "https://api.coinmarketcap.com/v1/ticke/"
 
 type CoinMarketCapMarket struct {
 	Id 	string	`json:"id"`
@@ -45,8 +45,13 @@ func GetSpecifiedMarkets() (markets []CoinMarketCapMarket, err error){
 	resp, er := client.Do(req)
 	if er != nil {
 		log.Fatal("Do: ", er)
-		err = er
-		return
+
+	}
+	if res.StatusCode != 200 {
+  		b, _ := ioutil.ReadAll(res.Body)
+  		err = er
+  		log.Fatal(string(b))
+  		return
 	}
 
 	//decode payload
