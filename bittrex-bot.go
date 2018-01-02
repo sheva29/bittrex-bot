@@ -4,20 +4,8 @@ import (
 	"fmt"
 	"encoding/json"
 	"os"
-	"errors"
 	"github.com/toorop/go-bittrex"
-	"github.com/mitchellh/go-homedir"
-	"path"
 	"reflect"
-)
-
-type Config struct {
-	Key string `json:"key"`
-	Secret string `json:"secret"`
-}
-
-const (
-	DefaultConfigPath = ".config/bittrex-bot"
 )
 
 var MarketTickersBTC = map[string]string {
@@ -27,16 +15,15 @@ var MarketTickersBTC = map[string]string {
 	"BTC-LTC": "BTC-LTC",
 }
 
-var (
-	ErrMissingConfigFile = errors.New("couldn't find config file")
-	ErrMissingBittrexTokens = errors.New("missing Bittrex key and secret") 
-)
+// func createMarketTickersForBittrex() {
+
+// }
 
 func main() {
 
 	fmt.Println("started successfully")
 	test()
-	config, err := readBittrexCredentials(DefaultConfigPath)
+	config, err := readBittrexCredentials()
 	if  err != nil{
 		fmt.Println(err)
 	}
@@ -141,24 +128,24 @@ func getSelectedMarkets(allMarketSummaries []bittrex.MarketSummary) {
 }
 
 
-func readBittrexCredentials(providedPath string) (conf Config, err error ){
+// func readBittrexCredentials(providedPath string) (conf Config, err error ){
 
-	if dir, e := homedir.Dir(); e == nil {
-		expandedPath := path.Join(dir, providedPath)
-		if fConf, e := os.Open(expandedPath); e == nil {
-			defer fConf.Close()
-			err = json.NewDecoder(fConf).Decode(&conf)
+// 	if dir, e := homedir.Dir(); e == nil {
+// 		expandedPath := path.Join(dir, providedPath)
+// 		if fConf, e := os.Open(expandedPath); e == nil {
+// 			defer fConf.Close()
+// 			err = json.NewDecoder(fConf).Decode(&conf)
 
-		}
-	} else {
-		err = ErrMissingConfigFile
-		return
-	}
+// 		}
+// 	} else {
+// 		err = ErrMissingConfigFile
+// 		return
+// 	}
 
-	if conf.Key == "" {
-		err = ErrMissingBittrexTokens
-		return
-	}
+// 	if conf.Key == "" {
+// 		err = ErrMissingBittrexTokens
+// 		return
+// 	}
 
-	return
-}
+// 	return
+// }
