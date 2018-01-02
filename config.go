@@ -14,8 +14,28 @@ const (
 )
 
 // specify markets you want to buy from
-
-var Markets = []string { "BTC", "ETC"}
+var Markets = []string { 
+	"BTC",
+	"XRP",
+	"ETH",
+	"BCH",
+	"ADA",
+	"LTC",
+	"MIOTA",
+	"XEM",
+	"XLM",
+	"DASH",
+	"XMR",
+	"NEO",
+	"EOS",
+	"BTG",
+	"QTUM",
+	"XRB",
+	"TRX",
+	"ETC",
+	"ICX",
+	"LSK",
+}
 
 type Config struct {
 	Key string `json:"key"`
