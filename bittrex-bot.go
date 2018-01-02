@@ -113,6 +113,16 @@ func main() {
 	// fmt.Printf("order buy ETH: : %+v\n", orderb)
 	// ETHOrderMarketFormatted , err := json.MarshalIndent(orderETH, "", " ")
 	// os.Stdout.Write(ETHOrderMarketFormatted)
+
+	markets, err := GetSpecifiedMarkets()
+	marketsFormatted, err := json.MarshalIndent(markets, "", " ") 
+	os.Stdout.Write(marketsFormatted)
+	fmt.Printf("\n")
+	for _, element := range markets {
+		fmt.Printf("%s \n", element.Symbol)			
+	}
+	// fmt.Printf("Markets: %+v \n", markets)
+
 }
 
 func test() {
