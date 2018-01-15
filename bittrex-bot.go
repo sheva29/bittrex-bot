@@ -6,18 +6,27 @@ import (
 	"os"
 	"github.com/toorop/go-bittrex"
 	"reflect"
+	"github.com/shopspring/decimal"
+	"errors"
 )
 
-var MarketTickersBTC = map[string]string {
-	"BTC-ETH": "BTC-ETH",
-	"BTC-ETC": "BTC-ETC",
-	"BTC-XRP": "BTC-XRP",
-	"BTC-LTC": "BTC-LTC",
-}
-
-// func createMarketTickersForBittrex() {
-
+// var MarketTickersBTC = map[string]string {
+// 	"BTC-ETH": "BTC-ETH",
+// 	"BTC-ETC": "BTC-ETC",
+// 	"BTC-XRP": "BTC-XRP",
+// 	"BTC-LTC": "BTC-LTC",
 // }
+
+var MarketTickerBTC string = "BTC-"
+
+type CurrentBalance struct {
+
+	Currency string
+	Balance decimal.Decimal
+	BTHValue float32
+	OrderUuid string
+
+}
 
 func main() {
 
@@ -28,6 +37,7 @@ func main() {
 		fmt.Println(err)
 	}
 	bittrex := bittrex.New(config.Key, config.Secret)
+	fmt.Print("bittrex is ", reflect.TypeOf(bittrex))
 
 	/*
 	 *	Markets
@@ -71,10 +81,10 @@ func main() {
 	 }
 	 *
 	 */
-	marketSummaries, err := bittrex.GetMarketSummaries()
-	fmt.Print("Type of markets: ", reflect.TypeOf(marketSummaries))
+	// marketSummaries, err := bittrex.GetMarketSummaries()
+	// fmt.Print("Type of markets: ", reflect.TypeOf(marketSummaries))
 
-	getSelectedMarkets(marketSummaries)
+	// getSelectedMarkets(marketSummaries)
 
 	// fmt.Printf("Type of +%v", reflect.TypeOf(summary))
 
@@ -105,47 +115,72 @@ func main() {
 	marketsFormatted, err := json.MarshalIndent(markets, "", " ") 
 	os.Stdout.Write(marketsFormatted)
 	fmt.Printf("\n")
+
 	for _, element := range markets {
 		fmt.Printf("%s \n", element.Symbol)			
 	}
+	/*
+		Printing current balances
+	*/
 	// fmt.Printf("Markets: %+v \n", markets)
+	fmt.Print("")
+	balances, err := bittrex.GetBalances()
+	if err != nil{
+		fmt.Println(err)
+	}
 
+	fmt.Printf("balance %+v\n", balances)
+	checkBalances(balances)
+	// fmt.Print("balance object: ", reflect.TypeOf(balances))
+
+	// fmt.Printf("balance %+v\n", balances)
+
+	orderHistory, err := bittrex.GetOrderHistory("BTC-ADA")
+	if err != nil{
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v\n",orderHistory)
+
+	
 }
 
 func test() {
 	fmt.Print("I'm being called")
 }
 
-func getSelectedMarkets(allMarketSummaries []bittrex.MarketSummary) {
-	// for
-	fmt.Print("Inside the function")
-	for _, market := range allMarketSummaries{
-		// fmt.Printf("%+v\n", market.MarketName)
-		if _, ok := MarketTickersBTC[market.MarketName]; ok{
-			fmt.Printf("%+v\n", market)
-		}
-	} 
-}
-
-
-// func readBittrexCredentials(providedPath string) (conf Config, err error ){
-
-// 	if dir, e := homedir.Dir(); e == nil {
-// 		expandedPath := path.Join(dir, providedPath)
-// 		if fConf, e := os.Open(expandedPath); e == nil {
-// 			defer fConf.Close()
-// 			err = json.NewDecoder(fConf).Decode(&conf)
-
+// func getSelectedMarkets(allMarketSummaries []bittrex.MarketSummary) {
+// 	// for
+// 	fmt.Print("Inside the function")
+// 	for _, market := range allMarketSummaries{
+// 		// fmt.Printf("%+v\n", market.MarketName)
+// 		if _, ok := MarketTickersBTC[market.MarketName]; ok{
+// 			fmt.Printf("%+v\n", market)
 // 		}
-// 	} else {
-// 		err = ErrMissingConfigFile
-// 		return
-// 	}
-
-// 	if conf.Key == "" {
-// 		err = ErrMissingBittrexTokens
-// 		return
-// 	}
-
-// 	return
+// 	} 
 // }
+
+func checkBalances(balances []bittrex.Balance) ( currentBalances []CurrentBalance, err error){
+	if len(balances) > 0 {
+
+		fmt.Printf("we have : %d balances for the following coins: \n", len(balances))
+
+		for _, balance := range balances {
+			var cb CurrentBalance
+			if balance.Currency != "BTC"{
+				cb.Balance = balance.Balance
+				cb.Currency = balance.Currency
+				currentBalances = append(currentBalances, cb)
+				fmt.Printf("Currency: %v \n", balance.Currency)
+				fmt.Printf("Balance: %v \n", balance.Balance)
+			}
+		}
+	}else{
+		err = errors.New("Balance is empty. check website")
+		return
+	}
+
+
+
+
+	return
+}

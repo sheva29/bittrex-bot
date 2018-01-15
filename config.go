@@ -6,6 +6,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"path"
 	"os"
+	// "github.com/shopspring/decimal"
 )
 
 // specify your path relative to your user
@@ -36,6 +37,8 @@ var Markets = []string {
 	"ICX",
 	"LSK",
 }
+
+const SellRatePercentage = 5.0
 
 type Config struct {
 	Key string `json:"key"`
