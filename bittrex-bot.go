@@ -7,7 +7,7 @@ import (
 	"github.com/toorop/go-bittrex"
 	"reflect"
 	"github.com/shopspring/decimal"
-	"errors"
+	// "errors"
 )
 
 type CurrentBalance struct {
@@ -43,46 +43,40 @@ func main() {
 	}
 
 	// read order numbers
-	orders, err := readOrderIds()
+	existingOrderIds, err := readOrderIds()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-
-	// result := orders.Ids["orderuuids"].(map[string]interface{})
-
-	// for key, value := range result {
- //  	// Each value is an interface{} type, that is type asserted as a string
- //  		fmt.Println(key, value)
-	// }
-	fmt.Printf("result : %+v \n", orders.Ids["orderuuids"].(map[string]interface{})["someUuId"])
-
-	orders.Ids["orderuuids"].(map[string]interface{})["newValue"] = "newValue"
-	fmt.Printf("orders after adding element: %+v \n", orders.Ids["orderuuids"])
-	// orderIds.addId("thisIsANewOrderId", "this is a new value")
-	
-	f := writeToOrdersFile(orders)
-	if f != nil {
-		fmt.Print(f, "\n")
-	}
-	/*
-
-		init bittrex client 
-
-	*/
+	//init bittrex client
 	bittrex := bittrex.New(config.Key, config.Secret)
 	fmt.Printf("bittrex is %v \n", reflect.TypeOf(bittrex))
+	printIds(bittrex)
+	//get current balances
+	if ids, ok := existingOrderIds.Ids["orderuuids"].(map[string]interface{}); ok{
+
+		for k, v := range ids {
+			fmt.Printf("orderuuid: key: %s - value: %s\n", k , v)
+			order, err := bittrex.GetOrder(k)
+
+			if err == nil{
+				fmt.Print(err, "\n")
+			} 
+
+			fmt.Printf("order: %+v\n", order)
+		}
+	}
 
 
 	/*
 		Printing current balances
 	*/
 	// fmt.Printf("Markets: %+v \n", markets)
-	fmt.Print("\n")
-	balances, err := bittrex.GetBalances()
-	if err != nil{
-		fmt.Println(err)
-	}
+	// fmt.Print("\n")
+	// balances, err := bittrex.GetBalances()
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
 
 	/*
 	
@@ -90,47 +84,52 @@ func main() {
 		
 	*/
 	// fmt.Printf("balance %+v\n", balances)
-	userBalances, err := checkBalances(balances)
+	// userBalances, err := checkBalances(balances)
 
-	if err != nil {
-		fmt.Printf( "Balance error: %+v \n", err)
-	}
+	// if err != nil {
+	// 	fmt.Printf( "Balance error: %+v \n", err)
+	// }
 
-	for _, userBalance := range userBalances{
-		orderHistory, err := bittrex.GetOrderHistory(userBalance.MartketTicker)
-		if err != nil{
-			fmt.Println(err)
-		}
-		if len (orderHistory) > 0 {
+	// for _, userBalance := range userBalances{
+	// 	orderHistory, err := bittrex.GetOrderHistory(userBalance.MartketTicker)
+	// 	if err != nil{
+	// 		fmt.Println(err)
+	// 	}
+	// 	if len (orderHistory) > 0 {
 
-			for _, order := range orderHistory {
-				if userBalance.Balance.Equals(order.Quantity) {
-					userBalance.OrderUuid = order.OrderUuid
-					userBalance.InitialLimitBuy = order.Limit
-					userBalance.NewAmountToSell(SellRatePercentage)
-				}
-			}
-		} 
-		fmt.Printf("UserBalance Object: %+v\n",userBalance)
+	// 		for _, order := range orderHistory {
+	// 			if userBalance.Balance.Equals(order.Quantity) {
+	// 				userBalance.OrderUuid = order.OrderUuid
+	// 				userBalance.InitialLimitBuy = order.Limit
+	// 				userBalance.NewAmountToSell(SellRatePercentage)
+	// 			}
+	// 		}
+	// 	} 
+	// 	fmt.Printf("UserBalance Object: %+v\n",userBalance)
 
-		ticker, err := bittrex.GetTicker(userBalance.MartketTicker)
+	// 	ticker, err := bittrex.GetTicker(userBalance.MartketTicker)
 
-		if err != nil {
-			fmt.Print(err,"\n")
-		}
+	// 	if err != nil {
+	// 		fmt.Print(err,"\n")
+	// 	}
 
-		fmt.Printf("ticker for %v : %+v \n", userBalance.Currency, ticker)
-		fmt.Printf("amount to buy: %v ticker bid: %v \n",  userBalance.AmountToSell, ticker.Bid)
+	// 	fmt.Printf("ticker for %v : %+v \n", userBalance.Currency, ticker)
+	// 	fmt.Printf("amount to buy: %v ticker bid: %v \n",  userBalance.AmountToSell, ticker.Bid)
 
-		checkIfCanSell := userBalance.AmountToSell.Cmp(ticker.Bid)
-		fmt.Printf("checkIfCanSell: %v\n", checkIfCanSell)
-		if  checkIfCanSell == 0 || checkIfCanSell < 1 {
-			fmt.Print("We can buy \n")
-		} else {
-			fmt.Print("We aren't buying \n")
-		}
+	// 	checkIfCanSell := userBalance.AmountToSell.Cmp(ticker.Bid)
+	// 	fmt.Printf("checkIfCanSell: %v\n", checkIfCanSell)
+	// 	if  checkIfCanSell == 0 || checkIfCanSell < 1 {
+	// 		fmt.Print("We can buy \n")
+	// 	} else {
+	// 		fmt.Print("We aren't buying \n")
+	// 	}
 
-	}	
+	// }	
+}
+
+func printIds(b *bittrex.Bittrex){
+
+	fmt.Printf("type of bittrex: %+v\n", *b)
 }
 
 
@@ -145,28 +144,28 @@ func main() {
 // 	} 
 // }
 
-func checkBalances(balances []bittrex.Balance) ( currentBalances []CurrentBalance, err error){
+// func checkBalances(balances []bittrex.Balance) ( currentBalances []CurrentBalance, err error){
 	
-	if len(balances) > 0 {
+// 	if len(balances) > 0 {
 
-		fmt.Printf("we have : %d balances for the following coins: \n", len(balances))
+// 		fmt.Printf("we have : %d balances for the following coins: \n", len(balances))
 
-		for _, balance := range balances {
-			var cb CurrentBalance = NewCurrentBalance()
-			if balance.Currency != "BTC"{
-				cb.Balance = balance.Balance
-				cb.Currency = balance.Currency
-				cb.MartketTicker += balance.Currency
-				currentBalances = append(currentBalances, cb)
-				// fmt.Printf("Currency: %v \n", balance.Currency)
-				// fmt.Printf("Balance: %v \n", balance.Balance)
-			}
-		}
+// 		for _, balance := range balances {
+// 			var cb CurrentBalance = NewCurrentBalance()
+// 			if balance.Currency != "BTC"{
+// 				cb.Balance = balance.Balance
+// 				cb.Currency = balance.Currency
+// 				cb.MartketTicker += balance.Currency
+// 				currentBalances = append(currentBalances, cb)
+// 				// fmt.Printf("Currency: %v \n", balance.Currency)
+// 				// fmt.Printf("Balance: %v \n", balance.Balance)
+// 			}
+// 		}
 
-	}else{
-		err = errors.New("Balance is empty. check your Bittrex account for more information")
-		return
-	}
+// 	}else{
+// 		err = errors.New("Balance is empty. check your Bittrex account for more information")
+// 		return
+// 	}
 
-	return
-}
+// 	return
+// }

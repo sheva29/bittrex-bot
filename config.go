@@ -52,7 +52,7 @@ type Orders struct {
 }
 
 func(oids *Orders)addId(key string, value string){
-	oids.Ids[key] = value
+	oids.Ids["orderuuids"].(map[string]interface{})[key] = value
 }
 
 var (
