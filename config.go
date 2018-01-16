@@ -47,27 +47,27 @@ type Config struct {
 	Secret string `json:"secret"`
 }
 
-type OrderIds struct {
-	Ids []string `json:"orderuuids"`
+type Orders struct {
+	Ids map[string]interface{} `json:"orderuuids"`
 }
 
-func(oids *OrderIds)addId(id string){
-	oids.Ids = append(oids.Ids, id)
+func(oids *Orders)addId(key string, value string){
+	oids.Ids[key] = value
 }
 
 var (
 	ErrMissingConfigFile = errors.New("couldn't find config file")
 	ErrMissingBittrexTokens = errors.New("missing Bittrex key and secret") 
-	ErrMissingOrderIdsFile = errors.New("Missing orderIds file")
+	ErrMissingOrderIdsFile = errors.New("Missing orderIds file or corrupted file")
 	ErrNoOrderIdsPresent = errors.New("No orderIds present in file")
 )
 
-func readOrderIds() (orderIds OrderIds, err error){
+func readOrderIds() (orderIds Orders, err error){
 	if dir, e := homedir.Dir(); e == nil {
 		ordersPath := path.Join(dir, OrdersPath)
 		if fConf, e := os.Open(ordersPath); e == nil {
 			defer fConf.Close()
-			err = json.NewDecoder(fConf).Decode(&orderIds)
+			err = json.NewDecoder(fConf).Decode(&orderIds.Ids)
 		}
 	} else {
 		err = ErrMissingOrderIdsFile
@@ -82,7 +82,7 @@ func readOrderIds() (orderIds OrderIds, err error){
 	return
 }
 
-func writeToOrdersFile(orderIds OrderIds) (err error) {
+func writeToOrdersFile(orderIds Orders) (err error) {
 
 	if dir, e := homedir.Dir(); e == nil {
 		ordersPath := path.Join(dir, OrdersPath)

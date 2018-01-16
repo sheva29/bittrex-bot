@@ -43,15 +43,25 @@ func main() {
 	}
 
 	// read order numbers
-	orderIds, err := readOrderIds()
+	orders, err := readOrderIds()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Printf("order Ids: %+v", orderIds)
-	orderIds.addId("thisIsANewOrderId")
 
-	f := writeToOrdersFile(orderIds)
+	// result := orders.Ids["orderuuids"].(map[string]interface{})
+
+	// for key, value := range result {
+ //  	// Each value is an interface{} type, that is type asserted as a string
+ //  		fmt.Println(key, value)
+	// }
+	fmt.Printf("result : %+v \n", orders.Ids["orderuuids"].(map[string]interface{})["someUuId"])
+
+	orders.Ids["orderuuids"].(map[string]interface{})["newValue"] = "newValue"
+	fmt.Printf("orders after adding element: %+v \n", orders.Ids["orderuuids"])
+	// orderIds.addId("thisIsANewOrderId", "this is a new value")
+	
+	f := writeToOrdersFile(orders)
 	if f != nil {
 		fmt.Print(f, "\n")
 	}
