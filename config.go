@@ -41,6 +41,7 @@ var Markets = []string {
 }
 
 var SellRatePercentage = decimal.NewFromFloat(1.05)
+var NumberOfTransacions = 4
 
 type Config struct {
 	Key string `json:"key"`

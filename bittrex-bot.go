@@ -14,21 +14,18 @@ type CurrentBalance struct {
 
 	Currency string
 	Balance decimal.Decimal
-	BTHValue float32
+	BTHValue decimal.Decimal
 	OrderUuid string
-	MartketTicker string 
-	InitialLimitBuy decimal.Decimal
 	AmountToSell decimal.Decimal
 }
 
 func NewCurrentBalance() CurrentBalance {
 	return CurrentBalance {
-		MartketTicker: "BTC-",
 	}
 }
 
 func (c *CurrentBalance)NewAmountToSell(sellPercentage decimal.Decimal) {
-	c.AmountToSell = c.InitialLimitBuy.Mul(SellRatePercentage)
+	c.AmountToSell = c.BTHValue.Mul(SellRatePercentage)
 }
 
 
@@ -48,24 +45,53 @@ func main() {
 		fmt.Println(err)
 	}
 
+	if len(existingOrderIds.Ids) == 0 {
+		//then GetBalances and populate object from it
+	}
+
+	fmt.Printf("balances len: %v\n", len(existingOrderIds.Ids))
+
 	//init bittrex client
 	bittrex := bittrex.New(config.Key, config.Secret)
 	fmt.Printf("bittrex is %v \n", reflect.TypeOf(bittrex))
-	printIds(bittrex)
-	//get current balances
+
+	// create slice of balances to populate
+	var currentBalances []CurrentBalance
+
+	//get current balances based on order numbers
 	if ids, ok := existingOrderIds.Ids["orderuuids"].(map[string]interface{}); ok{
 
 		for k, v := range ids {
 			fmt.Printf("orderuuid: key: %s - value: %s\n", k , v)
 			order, err := bittrex.GetOrder(k)
 
-			if err == nil{
+			if err != nil{
 				fmt.Print(err, "\n")
-			} 
+			}
+			var currentBalance = NewCurrentBalance()
 
-			fmt.Printf("order: %+v\n", order)
+			currentBalance.Currency = order.Exchange
+			currentBalance.Balance = order.Quantity
+			currentBalance.BTHValue = order.Limit
+			currentBalance.OrderUuid = order.OrderUuid
+			currentBalance.NewAmountToSell(SellRatePercentage) 
+			currentBalances = append(currentBalances, currentBalance)
+
+			// create current balance 
+			fmt.Printf("Non-BTC order: %+v\n", currentBalance)
 		}
+
+		// check if there's any BTC balance and populate []CurrentBalance
+		BTCBalance, err := bittrex.GetBalance("BTC")
+		if err != nil {
+			fmt.Print(err, "\n")
+		}
+
+		//create current balance
+		fmt.Printf("BTC balance: %+v\n",BTCBalance)
 	}
+
+	// populate CurrentBalance object
 
 
 	/*
@@ -126,12 +152,6 @@ func main() {
 
 	// }	
 }
-
-func printIds(b *bittrex.Bittrex){
-
-	fmt.Printf("type of bittrex: %+v\n", *b)
-}
-
 
 // func getSelectedMarkets(allMarketSummaries []bittrex.MarketSummary) {
 // 	// for
