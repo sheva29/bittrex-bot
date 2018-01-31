@@ -47,19 +47,64 @@ func main() {
 
 	if len(existingOrderIds.Ids) == 0 {
 		//then GetBalances and populate object from it
+		fmt.Print("No existing balances \n")
 	}
 
-	fmt.Printf("balances len: %v\n", len(existingOrderIds.Ids))
+	fmt.Printf("balance Ids len: %v\n", len(existingOrderIds.Ids))
 
 	//init bittrex client
 	bittrex := bittrex.New(config.Key, config.Secret)
 	fmt.Printf("bittrex is %v \n", reflect.TypeOf(bittrex))
 
 	// create slice of balances to populate
-	var currentBalances []CurrentBalance
+	currentBalances := returnBalances(existingOrderIds, bittrex)
+	fmt.Printf("Balances: %+v\n", reflect.TypeOf(currentBalances))
 
-	//get current balances based on order numbers
-	if ids, ok := existingOrderIds.Ids["orderuuids"].(map[string]interface{}); ok{
+	if len(currentBalances) > 0 {
+		sellCurrentCoins(&currentBalances, bittrex)
+	}
+
+	// let's check if we have a BTC balance
+			// check if there's any BTC balance and populate []CurrentBalance
+	BTC, err := bittrex.GetBalance("BTC")
+	if err != nil {
+		fmt.Print(err, "\n")
+	}
+	// populate BTC into balance
+	var BTCBalance = NewCurrentBalance()
+	BTCBalance.Balance = BTC.Balance
+
+	// if balance is greater than 0 for BTC, check for markets and buy
+
+	fmt.Printf("BTC balance: %+v\n",BTCBalance)
+	// populate CurrentBalance object
+	
+}
+
+func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex){
+
+
+	for _, balance := range *balances {
+		currentSellPrice, err := bittrex.GetTicker(balance.Currency)
+		if err != nil{
+			fmt.Print(err,"\n")
+		}
+
+		checkIfCanSell := balance.AmountToSell.Cmp(currentSellPrice.Bid)
+		if checkIfCanSell > 1 {
+			fmt.Printf("we can sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
+			// code for selling
+		}else{
+			fmt.Printf("we can't sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
+		}
+	}
+
+	return
+}
+
+func returnBalances(orders Orders, bittrex *bittrex.Bittrex) (balances []CurrentBalance) {
+
+	if ids, ok := orders.Ids["orderuuids"].(map[string]interface{}); ok{		
 
 		for k, v := range ids {
 			fmt.Printf("orderuuid: key: %s - value: %s\n", k , v)
@@ -68,124 +113,17 @@ func main() {
 			if err != nil{
 				fmt.Print(err, "\n")
 			}
-			var currentBalance = NewCurrentBalance()
+			currentBalance := CurrentBalance{
+				Currency : order.Exchange,
+				Balance : order.Quantity,
+				BTHValue : order.Limit,
+				OrderUuid : order.OrderUuid,
+			}
 
-			currentBalance.Currency = order.Exchange
-			currentBalance.Balance = order.Quantity
-			currentBalance.BTHValue = order.Limit
-			currentBalance.OrderUuid = order.OrderUuid
-			currentBalance.NewAmountToSell(SellRatePercentage) 
-			currentBalances = append(currentBalances, currentBalance)
-
-			// create current balance 
-			fmt.Printf("Non-BTC order: %+v\n", currentBalance)
+			currentBalance.NewAmountToSell(SellRatePercentage)
+			fmt.Printf("currentBalance: %+v\n", currentBalance)
+			balances = append(balances, currentBalance)
 		}
-
-		// check if there's any BTC balance and populate []CurrentBalance
-		BTCBalance, err := bittrex.GetBalance("BTC")
-		if err != nil {
-			fmt.Print(err, "\n")
-		}
-
-		//create current balance
-		fmt.Printf("BTC balance: %+v\n",BTCBalance)
 	}
-
-	// populate CurrentBalance object
-
-
-	/*
-		Printing current balances
-	*/
-	// fmt.Printf("Markets: %+v \n", markets)
-	// fmt.Print("\n")
-	// balances, err := bittrex.GetBalances()
-	// if err != nil{
-	// 	fmt.Println(err)
-	// }
-
-	/*
-	
-	Get User balance
-		
-	*/
-	// fmt.Printf("balance %+v\n", balances)
-	// userBalances, err := checkBalances(balances)
-
-	// if err != nil {
-	// 	fmt.Printf( "Balance error: %+v \n", err)
-	// }
-
-	// for _, userBalance := range userBalances{
-	// 	orderHistory, err := bittrex.GetOrderHistory(userBalance.MartketTicker)
-	// 	if err != nil{
-	// 		fmt.Println(err)
-	// 	}
-	// 	if len (orderHistory) > 0 {
-
-	// 		for _, order := range orderHistory {
-	// 			if userBalance.Balance.Equals(order.Quantity) {
-	// 				userBalance.OrderUuid = order.OrderUuid
-	// 				userBalance.InitialLimitBuy = order.Limit
-	// 				userBalance.NewAmountToSell(SellRatePercentage)
-	// 			}
-	// 		}
-	// 	} 
-	// 	fmt.Printf("UserBalance Object: %+v\n",userBalance)
-
-	// 	ticker, err := bittrex.GetTicker(userBalance.MartketTicker)
-
-	// 	if err != nil {
-	// 		fmt.Print(err,"\n")
-	// 	}
-
-	// 	fmt.Printf("ticker for %v : %+v \n", userBalance.Currency, ticker)
-	// 	fmt.Printf("amount to buy: %v ticker bid: %v \n",  userBalance.AmountToSell, ticker.Bid)
-
-	// 	checkIfCanSell := userBalance.AmountToSell.Cmp(ticker.Bid)
-	// 	fmt.Printf("checkIfCanSell: %v\n", checkIfCanSell)
-	// 	if  checkIfCanSell == 0 || checkIfCanSell < 1 {
-	// 		fmt.Print("We can buy \n")
-	// 	} else {
-	// 		fmt.Print("We aren't buying \n")
-	// 	}
-
-	// }	
+	return
 }
-
-// func getSelectedMarkets(allMarketSummaries []bittrex.MarketSummary) {
-// 	// for
-// 	fmt.Print("Inside the function")
-// 	for _, market := range allMarketSummaries{
-// 		// fmt.Printf("%+v\n", market.MarketName)
-// 		if _, ok := MarketTickersBTC[market.MarketName]; ok{
-// 			fmt.Printf("%+v\n", market)
-// 		}
-// 	} 
-// }
-
-// func checkBalances(balances []bittrex.Balance) ( currentBalances []CurrentBalance, err error){
-	
-// 	if len(balances) > 0 {
-
-// 		fmt.Printf("we have : %d balances for the following coins: \n", len(balances))
-
-// 		for _, balance := range balances {
-// 			var cb CurrentBalance = NewCurrentBalance()
-// 			if balance.Currency != "BTC"{
-// 				cb.Balance = balance.Balance
-// 				cb.Currency = balance.Currency
-// 				cb.MartketTicker += balance.Currency
-// 				currentBalances = append(currentBalances, cb)
-// 				// fmt.Printf("Currency: %v \n", balance.Currency)
-// 				// fmt.Printf("Balance: %v \n", balance.Balance)
-// 			}
-// 		}
-
-// 	}else{
-// 		err = errors.New("Balance is empty. check your Bittrex account for more information")
-// 		return
-// 	}
-
-// 	return
-// }
