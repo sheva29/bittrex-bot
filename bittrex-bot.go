@@ -40,28 +40,28 @@ func main() {
 	}
 
 	// read order numbers
-	existingOrderIds, err := readOrderIds()
+	orderIds, err := readOrderIds()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	if len(existingOrderIds.Ids) == 0 {
+	if len(orderIds.Ids) == 0 {
 		//then GetBalances and populate object from it
 		fmt.Print("No existing balances \n")
 	}
 
-	fmt.Printf("balance Ids len: %v\n", len(existingOrderIds.Ids))
+	fmt.Printf("balance Ids len: %v\n", len(orderIds.Ids))
 
 	//init bittrex client
 	bittrex := bittrex.New(config.Key, config.Secret)
 	fmt.Printf("bittrex is %v \n", reflect.TypeOf(bittrex))
 
 	// create slice of balances to populate
-	currentBalances := returnBalances(existingOrderIds, bittrex)
+	currentBalances := returnBalances(orderIds, bittrex)
 	fmt.Printf("Balances: %+v\n", reflect.TypeOf(currentBalances))
 
 	if len(currentBalances) > 0 {
-		sellCurrentCoins(&currentBalances, bittrex)
+		sellCurrentCoins(&currentBalances, bittrex, &orderIds)
 	}
 
 	// let's check if we have a BTC balance
@@ -76,12 +76,20 @@ func main() {
 
 	// if balance is greater than 0 for BTC, check for markets and buy
 
-	fmt.Printf("BTC balance: %+v\n",BTCBalance)
+	fmt.Printf("BTC balance: %+v\n", BTCBalance)
 	// populate CurrentBalance object
+
+	writeToOrdersFile(orderIds)
+
+	if err != nil {
+
+	} else {
+		fmt.Print("successfully saved orderIds")
+	}
 	
 }
 
-func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex){
+func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orders *Orders){
 
 
 	for _, balance := range *balances {
@@ -89,17 +97,25 @@ func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex){
 		if err != nil{
 			fmt.Print(err,"\n")
 		}
-
+		// check if value is greater
 		checkIfCanSell := balance.AmountToSell.Cmp(currentSellPrice.Bid)
-		if checkIfCanSell > 1 {
+		if checkIfCanSell < 1 {
 			fmt.Printf("we can sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
-			// code for selling
+
+			amount, _ := balance.Balance.Float64()
+			bid, _ := currentSellPrice.Bid.Float64() 
+			// put sell order
+			uuid, err := bittrex.SellLimit(balance.Currency, amount, bid)
+			if err != nil {
+				fmt.Print(err)
+			}
+			// assign value to map
+			orders.Ids[uuid] = uuid
+			
 		}else{
 			fmt.Printf("we can't sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
 		}
 	}
-
-	return
 }
 
 func returnBalances(orders Orders, bittrex *bittrex.Bittrex) (balances []CurrentBalance) {

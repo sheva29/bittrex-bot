@@ -87,7 +87,7 @@ func writeToOrdersFile(orderIds Orders) (err error) {
 
 	if dir, e := homedir.Dir(); e == nil {
 		ordersPath := path.Join(dir, OrdersPath)
-		ordersJason, _ := json.Marshal(orderIds)
+		ordersJason, _ := json.Marshal(orderIds.Ids)
 		err = ioutil.WriteFile(ordersPath, ordersJason, 0644)
 		return
 	} else {
