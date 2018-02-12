@@ -16,44 +16,21 @@ const (
 	OrdersPath = ".config/bittrex-orders"
 )
 
-// specify markets you want to buy from
-var Markets = []string { 
-	"BTC",
-	"XRP",
-	"ETH",
-	"BCH",
-	"ADA",
-	"LTC",
-	"MIOTA",
-	"XEM",
-	"XLM",
-	"DASH",
-	"XMR",
-	"NEO",
-	"EOS",
-	"BTG",
-	"QTUM",
-	"XRB",
-	"TRX",
-	"ETC",
-	"ICX",
-	"LSK",
-}
-
-var SellRatePercentage = decimal.NewFromFloat(1.05)
-var NumberOfTransacions = 4
+var SellRatePercentage = decimal.NewFromFloat(1.06) //
+var BidRatePercentage = decimal.NewFromFloat(1.05) // we want to sell below our sell rate percentage
+var NumberOfTransacions = 4 // we want to handle only 4 transaction at the time given our budget
 
 type Config struct {
-	Key string `json:"key"`
-	Secret string `json:"secret"`
+	Key string
+	Secret string 
 }
 
 type Orders struct {
-	Ids map[string]interface{} `json:"orderuuids"`
+	Ids map[string]string `json:"orderuuids"`
 }
 
 func(oids *Orders)addId(key string, value string){
-	oids.Ids["orderuuids"].(map[string]interface{})[key] = value
+	oids.Ids[key] = value
 }
 
 var (

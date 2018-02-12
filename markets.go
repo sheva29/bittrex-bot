@@ -10,8 +10,33 @@ import (
 	// "fmt"
 	"io/ioutil"
     // "errors"
+    "sort"
 )
 const coinMarketCapUrl string = "https://api.coinmarketcap.com/v1/ticker/"
+
+// specify markets you want to buy from
+var Markets = []string { 
+	"BTC",
+	"XRP",
+	"ETH",
+	"BCH",
+	"ADA",
+	"LTC",
+	"MIOTA",
+	"XEM",
+	"XLM",
+	"DASH",
+	"XMR",
+	"NEO",
+	"EOS",
+	"BTG",
+	"QTUM",
+	"XRB",
+	"TRX",
+	"ETC",
+	"ICX",
+	"LSK",
+}
 
 type CoinMarketCapMarket struct {
 	Id 	string	`json:"id"`
@@ -30,7 +55,7 @@ type CoinMarketCapMarket struct {
 	LastUpdated int `json:"last_updated,string"`
 } 
 
-func GetSpecifiedMarkets() (markets []CoinMarketCapMarket, err error){
+func getSpecifiedMarkets() (markets []CoinMarketCapMarket, err error){
 
 	// build request
 	req, er := http.NewRequest("GET", coinMarketCapUrl, nil)
@@ -60,4 +85,19 @@ func GetSpecifiedMarkets() (markets []CoinMarketCapMarket, err error){
 	// fmt.Printf("Markets: %+v",)
 
 	return
+}
+
+func returnMarketsToBuy() (markets map[string]CoinMarketCapMarket, err error) {
+
+	allMarkets, err := getSpecifiedMarkets()
+
+	sort.Slice(allMarkets, func(i, j int) bool {
+  		return allMarkets[i].PercentageChange1h < allMarkets[j].PercentageChange1h
+	})
+
+	// for market, _ := range Markets {
+		
+	// }
+
+	return  
 }

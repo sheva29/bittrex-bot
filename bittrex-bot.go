@@ -2,12 +2,9 @@ package main
 
 import (
 	"fmt"
-	// "encoding/json"
-	// "os"
 	"github.com/toorop/go-bittrex"
 	"reflect"
 	"github.com/shopspring/decimal"
-	// "errors"
 )
 
 type CurrentBalance struct {
@@ -17,6 +14,7 @@ type CurrentBalance struct {
 	BTHValue decimal.Decimal
 	OrderUuid string
 	AmountToSell decimal.Decimal
+	AmountForBid decimal.Decimal
 }
 
 func NewCurrentBalance() CurrentBalance {
@@ -25,7 +23,11 @@ func NewCurrentBalance() CurrentBalance {
 }
 
 func (c *CurrentBalance)NewAmountToSell(sellPercentage decimal.Decimal) {
-	c.AmountToSell = c.BTHValue.Mul(SellRatePercentage)
+	c.AmountToSell = c.BTHValue.Mul(sellPercentage)
+}
+
+func (c *CurrentBalance)NewAmountForBid(bidPercentage decimal.Decimal) {
+	c.AmountForBid = c.BTHValue.Mul(bidPercentage)
 }
 
 
@@ -39,6 +41,9 @@ func main() {
 		fmt.Println(err)
 	}
 
+	/*
+		get order ids
+	*/
 	// read order numbers
 	orderIds, err := readOrderIds()
 	if err != nil {
@@ -56,16 +61,25 @@ func main() {
 	bittrex := bittrex.New(config.Key, config.Secret)
 	fmt.Printf("bittrex is %v \n", reflect.TypeOf(bittrex))
 
+	/*
+		get balances
+	*/
 	// create slice of balances to populate
 	currentBalances := returnBalances(orderIds, bittrex)
 	fmt.Printf("Balances: %+v\n", reflect.TypeOf(currentBalances))
 
-	if len(currentBalances) > 0 {
-		sellCurrentCoins(&currentBalances, bittrex, &orderIds)
+	/*
+		sell
+	*/
+	balances := len(currentBalances)
+	if balances > 0 {
+		sellCurrencies(&currentBalances, bittrex, &orderIds)
 	}
 
-	// let's check if we have a BTC balance
-			// check if there's any BTC balance and populate []CurrentBalance
+	/*
+		check BTC balance
+	*/
+	// check if there's any BTC balance and populate []CurrentBalance
 	BTC, err := bittrex.GetBalance("BTC")
 	if err != nil {
 		fmt.Print(err, "\n")
@@ -77,8 +91,13 @@ func main() {
 	// if balance is greater than 0 for BTC, check for markets and buy
 
 	fmt.Printf("BTC balance: %+v\n", BTCBalance)
+
 	// populate CurrentBalance object
 
+	/*
+		save orders
+	*/
+	// we save our Ids in case they have change
 	writeToOrdersFile(orderIds)
 
 	if err != nil {
@@ -89,7 +108,7 @@ func main() {
 	
 }
 
-func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orders *Orders){
+func sellCurrencies(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orders *Orders){
 
 
 	for _, balance := range *balances {
@@ -103,7 +122,7 @@ func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orde
 			fmt.Printf("we can sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
 
 			amount, _ := balance.Balance.Float64()
-			bid, _ := currentSellPrice.Bid.Float64() 
+			bid, _ := balance.AmountForBid.Float64() 
 			// put sell order
 			uuid, err := bittrex.SellLimit(balance.Currency, amount, bid)
 			if err != nil {
@@ -111,6 +130,10 @@ func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orde
 			}
 			// assign value to map
 			orders.Ids[uuid] = uuid
+
+			//TODO: add mechanism
+			// we delete old uuid
+			delete(orders.Ids, balance.OrderUuid)
 			
 		}else{
 			fmt.Printf("we can't sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
@@ -120,9 +143,9 @@ func sellCurrentCoins(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orde
 
 func returnBalances(orders Orders, bittrex *bittrex.Bittrex) (balances []CurrentBalance) {
 
-	if ids, ok := orders.Ids["orderuuids"].(map[string]interface{}); ok{		
+	// if ids, ok := orders.Ids["orderuuids"].(map[string]interface{}); ok{		
 
-		for k, v := range ids {
+		for k, v := range orders.Ids {
 			fmt.Printf("orderuuid: key: %s - value: %s\n", k , v)
 			order, err := bittrex.GetOrder(k)
 
@@ -137,9 +160,14 @@ func returnBalances(orders Orders, bittrex *bittrex.Bittrex) (balances []Current
 			}
 
 			currentBalance.NewAmountToSell(SellRatePercentage)
+			currentBalance.NewAmountForBid(BidRatePercentage)
 			fmt.Printf("currentBalance: %+v\n", currentBalance)
 			balances = append(balances, currentBalance)
 		}
-	}
+	// }
+	return
+}
+
+func buyCurrencies() () {
 	return
 }
