@@ -2,34 +2,31 @@ package main
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"github.com/toorop/go-bittrex"
 	"reflect"
-	"github.com/shopspring/decimal"
 )
 
 type CurrentBalance struct {
-
-	Currency string
-	Balance decimal.Decimal
-	BTHValue decimal.Decimal
-	OrderUuid string
+	Currency     string
+	Balance      decimal.Decimal
+	BTHValue     decimal.Decimal
+	OrderUuid    string
 	AmountToSell decimal.Decimal
 	AmountForBid decimal.Decimal
 }
 
 func NewCurrentBalance() CurrentBalance {
-	return CurrentBalance {
-	}
+	return CurrentBalance{}
 }
 
-func (c *CurrentBalance)NewAmountToSell(sellPercentage decimal.Decimal) {
+func (c *CurrentBalance) NewAmountToSell(sellPercentage decimal.Decimal) {
 	c.AmountToSell = c.BTHValue.Mul(sellPercentage)
 }
 
-func (c *CurrentBalance)NewAmountForBid(bidPercentage decimal.Decimal) {
+func (c *CurrentBalance) NewAmountForBid(bidPercentage decimal.Decimal) {
 	c.AmountForBid = c.BTHValue.Mul(bidPercentage)
 }
-
 
 func main() {
 
@@ -37,7 +34,7 @@ func main() {
 
 	// get keys
 	config, err := readBittrexCredentials()
-	if  err != nil{
+	if err != nil {
 		fmt.Println(err)
 	}
 
@@ -46,8 +43,9 @@ func main() {
 	*/
 	// read order numbers
 	orderIds, err := readOrderIds()
+	fmt.Println("orderIds:", orderIds)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error parsing order Ids:", err)
 	}
 
 	if len(orderIds.Ids) == 0 {
@@ -75,7 +73,6 @@ func main() {
 	if balances > 0 {
 		sellCurrencies(&currentBalances, bittrex, &orderIds)
 	}
-
 	/*
 		check BTC balance
 	*/
@@ -105,28 +102,34 @@ func main() {
 	} else {
 		fmt.Print("successfully saved orderIds")
 	}
-	
+
+	if markets, err := getSpecifiedMarkets(); err == nil {
+		for i := 0; i < 25; i++ {
+			fmt.Println(markets[i])
+		}
+	} else {
+		fmt.Println(err)
+	}
+
 }
 
-func sellCurrencies(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orders *Orders){
-
+func sellCurrencies(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orders *Orders) {
 
 	for _, balance := range *balances {
 		currentSellPrice, err := bittrex.GetTicker(balance.Currency)
-		if err != nil{
-			fmt.Print(err,"\n")
+		if err != nil {
+			fmt.Println("couldn't get order for", balance.Currency, err)
 		}
 		// check if value is greater
-		checkIfCanSell := balance.AmountToSell.Cmp(currentSellPrice.Bid)
-		if checkIfCanSell < 1 {
-			fmt.Printf("we can sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
+		if balance.AmountToSell.Cmp(currentSellPrice.Bid) < 1 {
+			fmt.Printf("we can sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid)
 
 			amount, _ := balance.Balance.Float64()
-			bid, _ := balance.AmountForBid.Float64() 
+			bid, _ := balance.AmountForBid.Float64()
 			// put sell order
 			uuid, err := bittrex.SellLimit(balance.Currency, amount, bid)
 			if err != nil {
-				fmt.Print(err)
+				fmt.Println(err)
 			}
 			// assign value to map
 			orders.Ids[uuid] = uuid
@@ -134,40 +137,38 @@ func sellCurrencies(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orders
 			//TODO: add mechanism
 			// we delete old uuid
 			delete(orders.Ids, balance.OrderUuid)
-			
-		}else{
-			fmt.Printf("we can't sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid )
+
+		} else {
+			fmt.Printf("we can't sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid)
 		}
 	}
 }
 
 func returnBalances(orders Orders, bittrex *bittrex.Bittrex) (balances []CurrentBalance) {
 
-	// if ids, ok := orders.Ids["orderuuids"].(map[string]interface{}); ok{		
+	for k, v := range orders.Ids {
+		fmt.Printf("orderuuid: key: %s - value: %s\n", k, v)
+		order, err := bittrex.GetOrder(k)
 
-		for k, v := range orders.Ids {
-			fmt.Printf("orderuuid: key: %s - value: %s\n", k , v)
-			order, err := bittrex.GetOrder(k)
-
-			if err != nil{
-				fmt.Print(err, "\n")
-			}
-			currentBalance := CurrentBalance{
-				Currency : order.Exchange,
-				Balance : order.Quantity,
-				BTHValue : order.Limit,
-				OrderUuid : order.OrderUuid,
-			}
-
-			currentBalance.NewAmountToSell(SellRatePercentage)
-			currentBalance.NewAmountForBid(BidRatePercentage)
-			fmt.Printf("currentBalance: %+v\n", currentBalance)
-			balances = append(balances, currentBalance)
+		if err != nil {
+			fmt.Print(err, "\n")
 		}
-	// }
+		currentBalance := CurrentBalance{
+			Currency:  order.Exchange,
+			Balance:   order.Quantity,
+			BTHValue:  order.Limit,
+			OrderUuid: order.OrderUuid,
+		}
+
+		currentBalance.NewAmountToSell(SellRatePercentage)
+		currentBalance.NewAmountForBid(BidRatePercentage)
+		fmt.Printf("currentBalance: %+v\n", currentBalance)
+		balances = append(balances, currentBalance)
+	}
 	return
 }
 
-func buyCurrencies() () {
+func buyCurrencies() {
+	//TODO: build method based on expected value analysis
 	return
 }

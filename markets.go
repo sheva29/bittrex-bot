@@ -14,7 +14,7 @@ import (
 )
 
 const coinMarketCapUrl string = "https://api.coinmarketcap.com/v1/ticker/"
-const csvFilePath string = "/csv/"
+const csvFilePath string = "/Users/208493/Desktop/csv/"
 
 var today string = time.Now().Format("2000-01-01")
 
