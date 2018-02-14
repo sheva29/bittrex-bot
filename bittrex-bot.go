@@ -124,10 +124,8 @@ func sellCurrencies(balances *[]CurrentBalance, bittrex *bittrex.Bittrex, orders
 		if balance.AmountToSell.Cmp(currentSellPrice.Bid) < 1 {
 			fmt.Printf("we can sell for %+v, to sell: %+v - bid: %+v \n", balance.Currency, balance.AmountToSell, currentSellPrice.Bid)
 
-			amount, _ := balance.Balance.Float64()
-			bid, _ := balance.AmountForBid.Float64()
 			// put sell order
-			uuid, err := bittrex.SellLimit(balance.Currency, amount, bid)
+			uuid, err := bittrex.SellLimit(balance.Currency, balance.Balance, balance.AmountForBid)
 			if err != nil {
 				fmt.Println(err)
 			}
