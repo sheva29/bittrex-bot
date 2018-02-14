@@ -4,17 +4,21 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"sort"
 	"strconv"
 	"time"
 )
 
-const coinMarketCapUrl string = "https://api.coinmarketcap.com/v1/ticker/"
-const csvFilePath string = "/csv/"
+const (
+	coinMarketCapUrl = "https://api.coinmarketcap.com/v1/ticker/"
+	csvLocation      = "/csv/"
+)
 
 var today string = time.Now().Format("2006-01-02")
 
@@ -96,43 +100,46 @@ func getSpecifiedMarkets() (markets []CoinMarketCapMarket, err error) {
 */
 func writeMarketValueToFile(market CoinMarketCapMarket) {
 
-	// if file doesn't exist, add header
-	path := csvFilePath + market.Symbol + "-" + today + ".csv"
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		// path/to/whatever does not exist
-		file, err := os.Create(path)
-		if err != nil {
-			fmt.Println("Cannot create file", err)
-		}
-		defer file.Close()
-
-		writer := csv.NewWriter(file)
-		defer writer.Flush()
-
-		data := [][]string{{"Price", "Time"}}
-		for _, record := range data {
-			if err := writer.Write(record); err != nil {
-				fmt.Println("Cannot add csv headers")
+	if dir, e := homedir.Dir(); e == nil {
+		csvFilePath := path.Join(dir, csvLocation)
+		// if file doesn't exist, add header
+		path := csvFilePath + "/" + market.Symbol + "-" + today + ".csv"
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			// path/to/whatever does not exist
+			file, err := os.Create(path)
+			if err != nil {
+				fmt.Println("Cannot create file", err)
 			}
-		}
+			defer file.Close()
 
-	} else {
-		// it exists, then insert values regularly
-		file, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0666)
-		if err != nil {
-			fmt.Println("Cannot open file", err)
-		}
-		defer file.Close()
+			writer := csv.NewWriter(file)
+			defer writer.Flush()
 
-		writer := csv.NewWriter(file)
-		defer writer.Flush()
+			data := [][]string{{"Price", "Time"}}
+			for _, record := range data {
+				if err := writer.Write(record); err != nil {
+					fmt.Println("Cannot add csv headers")
+				}
+			}
 
-		BTCValue := strconv.FormatFloat(float64(market.PriceBtc), 'f', -1, 32)
-		currentTime := time.Now().Format("15:04:05")
-		data := [][]string{{BTCValue, currentTime}}
-		for _, record := range data {
-			if err := writer.Write(record); err != nil {
-				fmt.Println("Cannot add csv record")
+		} else {
+			// it exists, then insert values regularly
+			file, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0666)
+			if err != nil {
+				fmt.Println("Cannot open file", err)
+			}
+			defer file.Close()
+
+			writer := csv.NewWriter(file)
+			defer writer.Flush()
+
+			BTCValue := strconv.FormatFloat(float64(market.PriceBtc), 'f', -1, 32)
+			currentTime := time.Now().Format("15:04:05")
+			data := [][]string{{BTCValue, currentTime}}
+			for _, record := range data {
+				if err := writer.Write(record); err != nil {
+					fmt.Println("Cannot add csv record")
+				}
 			}
 		}
 	}
