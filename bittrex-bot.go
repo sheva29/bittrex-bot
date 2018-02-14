@@ -104,8 +104,8 @@ func main() {
 	}
 
 	if markets, err := getSpecifiedMarkets(); err == nil {
-		for i := 0; i < 25; i++ {
-			fmt.Println(markets[i])
+		for i := 1; i < 26; i++ {
+			writeMarketValueToFile(markets[i])
 		}
 	} else {
 		fmt.Println(err)

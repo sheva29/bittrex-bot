@@ -14,9 +14,9 @@ import (
 )
 
 const coinMarketCapUrl string = "https://api.coinmarketcap.com/v1/ticker/"
-const csvFilePath string = "/Users/208493/Desktop/csv/"
+const csvFilePath string = "/csv/"
 
-var today string = time.Now().Format("2000-01-01")
+var today string = time.Now().Format("2006-01-02")
 
 // specify markets you want to buy from
 var Markets = []string{
@@ -118,7 +118,7 @@ func writeMarketValueToFile(market CoinMarketCapMarket) {
 
 	} else {
 		// it exists, then insert values regularly
-		file, err := os.Open(path)
+		file, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			fmt.Println("Cannot open file", err)
 		}
@@ -128,7 +128,7 @@ func writeMarketValueToFile(market CoinMarketCapMarket) {
 		defer writer.Flush()
 
 		BTCValue := strconv.FormatFloat(float64(market.PriceBtc), 'f', -1, 32)
-		currentTime := time.Now().Format("00:00:00")
+		currentTime := time.Now().Format("15:04:05")
 		data := [][]string{{BTCValue, currentTime}}
 		for _, record := range data {
 			if err := writer.Write(record); err != nil {
@@ -136,8 +136,6 @@ func writeMarketValueToFile(market CoinMarketCapMarket) {
 			}
 		}
 	}
-
-	return
 }
 
 func returnMarketsToBuy() (markets map[string]CoinMarketCapMarket, err error) {
@@ -148,6 +146,7 @@ func returnMarketsToBuy() (markets map[string]CoinMarketCapMarket, err error) {
 		return allMarkets[i].PercentageChange1h < allMarkets[j].PercentageChange1h
 	})
 
+	// TODO:
 	// for market, _ := range Markets {
 
 	// }
